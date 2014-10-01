@@ -72,7 +72,10 @@ class ElasticSearchCollector(diamond.collector.Collector):
             'stats': "Available stats: \n"
             + " - jvm (JVM information) \n"
             + " - thread_pool (Thread pool information) \n"
-            + " - indices (Individual index stats)\n",
+            + " - indices (Individual index stats)\n"
+            + " - alias (Individual index stats from aliases)\n"
+            + "         will only gather stats from index that are part\n"
+            + "         of an alias",
             'logstash_mode': "If 'indices' stats are gathered, remove "
             + "the YYYY.MM.DD suffix from the index name "
             + "(e.g. logstash-adm-syslog-2014.01.03) and use that "
@@ -90,7 +93,7 @@ class ElasticSearchCollector(diamond.collector.Collector):
             'port':           9200,
             'instances':      [],
             'path':           'elasticsearch',
-            'stats':          ['jvm', 'thread_pool', 'indices'],
+            'stats':          ['jvm', 'thread_pool', 'indices', 'alias'],
             'logstash_mode': False,
             'cluster':       False,
         })
@@ -212,9 +215,23 @@ class ElasticSearchCollector(diamond.collector.Collector):
         else:
             return
 
+        if 'alias' in self.config['stats']:
+          # remove indices not aliased
+          # aggregate values from aliased indexes
+          aliases = self._get(host, port,
+                              '_alias')
+        else:
+          aliases={}
+          
         for name, index in indices.iteritems():
-            self._index_metrics(metrics, 'indices.%s' % name,
-                                index['primaries'])
+            if 'alias' in self.config['stats']:
+              if name in aliases.keys():
+                for alias_name, alias_data in aliases[name]['aliases'].iteritems():
+                  self._index_metrics(metrics, 'indices.%s' % alias_name,
+                                        index['primaries'])
+            else:
+              self._index_metrics(metrics, 'indices.%s' % name,
+                                  index['primaries'])
 
     def collect_instance(self, alias, host, port):
         result = self._get(host, port, '_nodes/_local/stats?all=true', 'nodes')
