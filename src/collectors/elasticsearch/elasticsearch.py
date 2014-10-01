@@ -224,14 +224,13 @@ class ElasticSearchCollector(diamond.collector.Collector):
           aliases={}
           
         for name, index in indices.iteritems():
-            if 'alias' in self.config['stats']:
-              if name in aliases.keys():
+            if name in aliases.keys():
                 for alias_name, alias_data in aliases[name]['aliases'].iteritems():
-                  self._index_metrics(metrics, 'indices.%s' % alias_name,
+                    self._index_metrics(metrics, 'indices.%s' % alias_name,
                                         index['primaries'])
             else:
-              self._index_metrics(metrics, 'indices.%s' % name,
-                                  index['primaries'])
+                self._index_metrics(metrics, 'indices.%s' % name,
+                                    index['primaries'])
 
     def collect_instance(self, alias, host, port):
         result = self._get(host, port, '_nodes/_local/stats?all=true', 'nodes')
