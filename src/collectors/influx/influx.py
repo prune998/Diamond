@@ -28,7 +28,8 @@ InfluxdbCollector.conf
 import diamond.collector
 from influxdb import client as influxdb
 import re
-
+import json
+from collections import defaultdict
 
 class InfluxCollector(diamond.collector.Collector):
 
@@ -71,12 +72,24 @@ class InfluxCollector(diamond.collector.Collector):
         """ gather stats for each db """
         stats = {}
 
+        # fetch DB stats
         for db in dbs:
           self.log.debug("gathering stats for DB %s", db)
           client.switch_db(db)
           series = client.query("list series")
           stats[db+".series.count"] = len (series[0]['points'])
-
+        
+        # fetch cluster stats
+        shardcount = defaultdict(int)
+        response = client.request("cluster/shards")
+        shards=json.loads(response.content)
+        for shard in shards:
+            if shard['database'] in dbs:
+                shardcount[shard['database']] +=1
+                
+        for stat in shardcount: 
+            stats[db+".shards.count"] = shardcount[stat]
+            
         return stats
 
     def collect(self):
@@ -106,6 +119,7 @@ class InfluxCollector(diamond.collector.Collector):
             stats = self.get_stats(client,dbs)
 
             for stat in stats:
+              self.log.debug("publishing serie %s", stat)
               if alias is not None:
                 self.publish(alias + "." + stat, stats[stat])
               else:
