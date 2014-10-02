@@ -152,11 +152,7 @@ class InfluxdbHandler(Handler):
             self.batch_timestamp = time.time()
             # Send pickled batch
             self._send()
-        else:
-            self.log.debug(
-                "InfluxdbHandler: not sending batch of %d as timestamp is %f",
-                self.batch_count,
-                (time.time() - self.batch_timestamp))
+
 
     def _send(self):
         """
