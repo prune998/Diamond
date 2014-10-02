@@ -75,7 +75,7 @@ class InfluxCollector(diamond.collector.Collector):
           self.log.debug("gathering stats for DB %s", db)
           client.switch_db(db)
           series = client.query("list series")
-          stats[db] = len (series[0]['points'])
+          stats[db+".series.count"] = len (series[0]['points'])
 
         return stats
 
