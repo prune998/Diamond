@@ -20,28 +20,20 @@ InfluxdbCollector.conf
     hosts = localhost:8086
     login = root
     password = root
-    database = None
+    #database = 
 ```
 
 """
-
-import tamere
 
 import diamond.collector
 from influxdb import client as influxdb
 import re
 
 
-class InfluxdbCollector(diamond.collector.Collector):
-
-    def __init__(self, *args, **kwargs):
-        super(InfluxdbCollector, self).__init__(*args, **kwargs)
-        self.log.error('starting InfluxdbCollector in error')
-        self.log.info('starting InfluxdbCollector in info')
-        self.log.debug('starting InfluxdbCollector in debug')
+class InfluxCollector(diamond.collector.Collector):
 
     def get_default_config_help(self):
-        config_help = super(InfluxdbCollector, self).get_default_config_help()
+        config_help = super(InfluxCollector, self).get_default_config_help()
         config_help.update({
             'login': "admin login to connect with. default to root",
             'password': "admin password. default to root",
@@ -57,15 +49,15 @@ class InfluxdbCollector(diamond.collector.Collector):
         """
         Returns the default collector settings
         """
-        config = super(InfluxdbCollector, self).get_default_config()
+        config = super(InfluxCollector, self).get_default_config()
         config.update({
-            'path':     'zookeeper',
+            'path':          'influxdb',
 
             # Connection settings
-            'hosts': ['localhost:8086'],
-            'login': "root",
-            'password': "root",
-            'database': None,
+            'hosts':         ['localhost:8086'],
+            'login':         "root",
+            'password':      "root",
+            'database':      None,
         })
         return config
 
@@ -81,9 +73,7 @@ class InfluxdbCollector(diamond.collector.Collector):
 
         for db in dbs:
           self.log.debug("gathering stats for DB %s", db)
-          client.switch_db(self, db)
-          # http://localhost:8086/db/test/series?u=root&p=root&q=list%20series%20'
-          #url = "db/{0}/series/{1}".format(self._baseurl, url)
+          client.switch_db(db)
           series = client.query("list series")
           stats[db] = len (series[0]['points'])
 
@@ -92,7 +82,6 @@ class InfluxdbCollector(diamond.collector.Collector):
     def collect(self):
         hosts = self.config.get('hosts')
 
-        self.log.error('-------------------toto connecting to hosts %s', hosts)
         # Convert a string config value to be an array
         if isinstance(hosts, basestring):
             hosts = [hosts]
@@ -103,7 +92,7 @@ class InfluxdbCollector(diamond.collector.Collector):
             hostname = matches.group(3)
             port = matches.group(5)
 
-            client = connect(hostname, port, self.config.get('login'), self.config.get('password'))
+            client = self.connect(hostname, port, self.config.get('login'), self.config.get('password'))
             dbs=self.config.get('database')
             if dbs:
               if isinstance(dbs, basestring):
