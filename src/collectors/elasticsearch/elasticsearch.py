@@ -220,9 +220,11 @@ class ElasticSearchCollector(diamond.collector.Collector):
           # aggregate values from aliased indexes
           aliases = self._get(host, port,
                               '_alias')
-        if not aliases:
-          aliases={}
-          
+          if not aliases:
+            aliases={}
+        else:
+            aliases={}
+            
         for name, index in indices.iteritems():
             if name in aliases.keys():
                 for alias_name, alias_data in aliases[name]['aliases'].iteritems():
